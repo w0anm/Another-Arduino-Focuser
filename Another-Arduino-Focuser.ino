@@ -20,32 +20,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 
-// Uncomment out below if you want either option (one or the other)
-//#define LCD_DISPLAY             // Sets up compile options
-//#define U8G_DISPLAY
 
 
 #include <Wire.h>
 #include <AccelStepper.h>
-
-#ifdef U8G_DISPLAY
-  #include "U8glib.h"
-  U8GLIB_SH1106_128X64 u8g(U8G_I2C_OPT_NONE);
-#endif
-
-#ifdef LCD_DISPLAY
-  #include <LiquidCrystal_I2C.h>
-  LiquidCrystal_I2C lcd(0x27,20,4);  // set LCD address to 0x27 for a 16 chars and 4 line display
-#endif
-
-int incomingByte = 0;   // for incoming serial data
-int pos_lo=0;
-int pos_hi=0;
-byte pos_buf[4];
-byte SByte;
-boolean step_status=0;
-
-int movStatus=0;
 
 /*
 
@@ -69,35 +47,21 @@ Enhancements
 
 */
 
-// max stepper count
-#define  STEPPER_MAX 32768
+// Uncomment out below if you want either option (one or the other)
+//#define LCD_DISPLAY             // Sets up compile options
+//#define U8G_DISPLAY
 
-// position mulipler (20 works well)
-int pos_mult=20;
+#define VERSION  "0.75"   	// version string
 
-// calulate max_pos based upon stepper max and pos_multiplier
-int max_pos=(STEPPER_MAX/pos_mult);
-
-// Servo Position 
-int servo_pos;
-
-// half of max
-int EEpromPOS=max_pos/2;
-
-// default posval
-int posval=EEpromPOS;
-
-int goto_loc=posval;
-
-
-#define VERSION  "0.75"   // version string
-#define REVMOTOR          // reverse motor movement
-#define HALFSTEP 8    // HALF4WIRE  (faster)
-//#define HALFSTEP 4        // FULL4WIRE
-#define motorPin8   8     // IN1 on the ULN2003 driver 2
-#define motorPin9   9     // IN2 on the ULN2003 driver 2
-#define motorPin10  10    // IN3 on the ULN2003 driver 2
-#define motorPin11  11    // IN4 on the ULN2003 driver 2
+// stepper setup
+#define REVMOTOR          	// reverse motor movement
+//#define HALFSTEP 4		// FULL4WIRE
+#define HALFSTEP 8		// HALF4WIRE  (faster)
+#define motorPin8   8		// IN1 on the ULN2003 driver 2
+#define motorPin9   9		// IN2 on the ULN2003 driver 2
+#define motorPin10  10		// IN3 on the ULN2003 driver 2
+#define motorPin11  11		// IN4 on the ULN2003 driver 2
+#define  STEPPER_MAX 32768	// max stepper count
 
 // for remote manual push button
 #define InBut   5         // Digital pin 5
@@ -105,6 +69,33 @@ int goto_loc=posval;
 
 // define step count for manual push button
 #define MButStep 2
+
+// variables
+int incomingByte = 0;   // for incoming serial data
+int pos_lo=0;
+int pos_hi=0;
+byte pos_buf[4];
+byte SByte;
+boolean step_status=0;
+int movStatus=0;
+int pos_mult=20;			// position mulipler (20 works well)	
+int max_pos=(STEPPER_MAX/pos_mult);	// calulate max_pos based upon stepper max and pos_multiplier
+int servo_pos;				// Servo Position 
+int EEpromPOS=max_pos/2;		// half of max
+int posval=EEpromPOS;			// default posval
+int goto_loc=posval;
+
+// display setup
+#ifdef U8G_DISPLAY
+  #include "U8glib.h"
+  U8GLIB_SH1106_128X64 u8g(U8G_I2C_OPT_NONE);
+#endif
+
+#ifdef LCD_DISPLAY
+  #include <LiquidCrystal_I2C.h>
+  LiquidCrystal_I2C lcd(0x27,20,4);  // set LCD address to 0x27 for a 16 chars and 4 line display
+#endif
+
 
 // Define a stepper and the pins it will use
 //AccelStepper stepper; // Defaults to AccelStepper::FULL4WIRE (4 pins) on 2, 3, 4, 5
