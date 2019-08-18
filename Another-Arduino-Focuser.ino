@@ -1,3 +1,4 @@
+
 // Another Arduino Focuser using JMI Smart Focuser Emulation
 
 /*
@@ -13,11 +14,15 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+
+(Arduino Nano - Atmega 328P)
 */
 
 
+// Uncomment out below if you want either option (one or the other)
 //#define LCD_DISPLAY             // Sets up compile options
-#define U8G_DISPLAY
+//#define U8G_DISPLAY
 
 
 #include <Wire.h>
@@ -64,14 +69,28 @@ Enhancements
 
 */
 
+// max stepper count
+#define  STEPPER_MAX 32768
 
-// recover from eeprom
-int EEpromPOS=8000;
+// position mulipler (20 works well)
+int pos_mult=20;
+
+// calulate max_pos based upon stepper max and pos_multiplier
+int max_pos=(STEPPER_MAX/pos_mult);
+
+// Servo Position 
+int servo_pos;
+
+// half of max
+int EEpromPOS=max_pos/2;
+
+// default posval
 int posval=EEpromPOS;
-int goto_loc=posval;
-int max_pos=16300;
 
-#define VERSION  "0.70"   // version string
+int goto_loc=posval;
+
+
+#define VERSION  "0.75"   // version string
 #define REVMOTOR          // reverse motor movement
 #define HALFSTEP 8    // HALF4WIRE  (faster)
 //#define HALFSTEP 4        // FULL4WIRE
@@ -85,7 +104,7 @@ int max_pos=16300;
 #define OutBut  6         // Digital pin 6
 
 // define step count for manual push button
-#define MButStep 100
+#define MButStep 2
 
 // Define a stepper and the pins it will use
 //AccelStepper stepper; // Defaults to AccelStepper::FULL4WIRE (4 pins) on 2, 3, 4, 5
@@ -148,7 +167,7 @@ void setup() {
   //stepper.setAcceleration(100.0);
   stepper.setMaxSpeed(500.0);
   stepper.setAcceleration(200.0);
-  stepper.setCurrentPosition(EEpromPOS*2);
+  stepper.setCurrentPosition(EEpromPOS*pos_mult);
 
   Serial.begin(9600);     // opens serial port, sets data rate to 9600 bps
 
@@ -174,7 +193,8 @@ void loop() {
      //move focuser IN
      goto_loc=posval-MButStep;
      // non-blocking
-     stepper.moveTo((goto_loc*2)); //cjk
+     servo_pos=goto_loc*20;
+     stepper.moveTo((servo_pos)); //cjk
      //stepper.setSpeed(200);  //screws up speed.
      step_status=1;                     // set status 1=running, 0=done
   }
@@ -183,7 +203,8 @@ void loop() {
      //move focuser OUT
      goto_loc=posval+MButStep;
      // non-blocking
-     stepper.moveTo((goto_loc*2)); //cjk
+     servo_pos=goto_loc*pos_mult;
+     stepper.moveTo((servo_pos)); //cjk
      //stepper.setSpeed(200);  //screws up speed.
      step_status=1;                     // set status 1=running, 0=done
   }
@@ -222,7 +243,7 @@ void loop() {
        // look for encoder changes.  When motion is detected, the command is echoed back.
        // if fails to move, then returns 'r'
        Serial.write('i');
-       posval=posval+10;
+       posval=posval+1;
        break;
 
      case 'o':                                // Move OUT Command (slow speed)
@@ -231,7 +252,7 @@ void loop() {
        // look for encoder changes.  When motion is detected, the command is echoed back.
        // if failes to move, then returns 'r'
        Serial.write('o');
-       posval=posval-10;
+       posval=posval-1;
        break;
 
      case 's':                                // stop focuser, abort
@@ -273,7 +294,8 @@ void loop() {
 #endif
 
        // non-blocking
-       stepper.moveTo(goto_loc*2);
+       servo_pos=goto_loc*pos_mult;
+       stepper.moveTo(servo_pos);
        //stepper.setSpeed(200);  //screws up speed.
        step_status=1;                     // set status 1=running, 0=done
        break;
@@ -282,7 +304,8 @@ void loop() {
 
    // starts stepper movement from 'g' to goto_loc specified
   if (step_status == 1) {
-     if (stepper.currentPosition() != goto_loc*2) {
+     servo_pos=goto_loc*pos_mult;
+     if (stepper.currentPosition() != servo_pos) {
        stepper.run();
 
 #ifdef LCD_DISPLAY
